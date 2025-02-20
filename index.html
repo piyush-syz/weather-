@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Web Application</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            background: linear-gradient(120deg, #4facfe, #00f2fe);
+            margin: 0;
+            padding: 50px;
+            color: white;
+            animation: fadeIn 1.5s ease-in-out;
+            transition: background 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            max-width: 450px;
+            margin: auto;
+            backdrop-filter: blur(10px);
+            animation: slideUp 1s ease-in-out;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        input {
+            padding: 12px;
+            width: 80%;
+            border-radius: 5px;
+            border: none;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 16px;
+            outline: none;
+            background: rgba(255, 255, 255, 0.8);
+            transition: transform 0.3s;
+        }
+        input:focus {
+            transform: scale(1.05);
+        }
+        button {
+            padding: 12px 25px;
+            background: #ffcc00;
+            color: black;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.3s ease-in-out, transform 0.2s;
+        }
+        button:hover {
+            background: #ff9900;
+            transform: scale(1.05);
+        }
+        #weatherResult {
+            margin-top: 20px;
+            font-size: 18px;
+            animation: fadeIn 1.5s ease-in-out;
+        }
+        .icon {
+            margin-top: 10px;
+            width: 100px;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .dark-mode {
+            background: #1e1e1e;
+            color: #f1f1f1;
+        }
+        .loading {
+            display: none;
+            font-size: 18px;
+            margin-top: 15px;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🌤 Weather Web Application</h2>
+        <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
+        <input type="text" id="location" list="suggestions" placeholder="Enter location">
+        <datalist id="suggestions"></datalist>
+        <button onclick="getWeather()">Get Weather</button>
+        <p class="loading" id="loading">Fetching weather data...</p>
+        <div id="weatherResult"></div>
+    </div>
+
+    <script>
+        let searchHistory = JSON.parse(localStorage.getItem('weatherSearchHistory')) || [];
+
+        document.getElementById('location').addEventListener('input', async function() {
+            const query = this.value;
+            if (query.length < 3) return;
+            
+            const apiKey = "045b3e0014ac4c1284f82910250802";
+            const url = `http://api.weatherapi.com/v1/search.json?key=${apiKey}&q=${query}`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                const datalist = document.getElementById('suggestions');
+                datalist.innerHTML = "";
+                data.forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city.name + ", " + city.region + ", " + city.country;
+                    datalist.appendChild(option);
+                });
+            } catch (error) {
+                console.error("Failed to fetch suggestions", error);
+            }
+        });
+
+        async function getWeather() {
+            const location = document.getElementById('location').value;
+            if (!location) {
+                alert("Please enter a location");
+                return;
+            }
+            
+            const apiKey = "045b3e0014ac4c1284f82910250802";
+            const url = `http://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${location}&aqi=yes`;
+            document.getElementById('loading').style.display = 'block';
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                if (data.error) {
+                    document.getElementById('weatherResult').innerHTML = `<p>${data.error.message}</p>`;
+                    return;
+                }
+                
+                document.getElementById('weatherResult').innerHTML = `
+                    <h3>${data.location.name}, ${data.location.country}</h3>
+                    <p>🌡 Temperature: ${data.current.temp_c}°C</p>
+                    <p>🌥 Condition: ${data.current.condition.text}</p>
+                    <p>🌧 Rain Possibility: ${data.current.precip_mm} mm</p>
+                    <img class="icon" src="${data.current.condition.icon}" alt="Weather icon">
+                `;
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('weatherResult').innerHTML = `<p>Failed to fetch weather data</p>`;
+            }
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle("dark-mode");
+        }
+    </script>
+</body>
+</html>
